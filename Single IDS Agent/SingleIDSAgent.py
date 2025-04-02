@@ -9,21 +9,21 @@ class SingleAgentIDS:
         self.training_data = training_data
         self.test_data = test_data
 
-        # Initialize the model and scaler
+        #  model and scaler
         self.random_forest = RandomForestClassifier(n_estimators=100, random_state=42)
         self.scaler = MinMaxScaler()
 
     def loading_datasets(self):
-        # Load the processed datasets
+        
         self.dataset1 = pd.read_csv(self.training_data)
         self.dataset2 = pd.read_csv(self.test_data)
 
-        # Drop unnecessary columns
+
         columns_to_drop = ['protocol_type', 'service', 'flag', 'label', 'difficulty']
         self.dataset1.drop(columns=columns_to_drop, inplace=True)
         self.dataset2.drop(columns=columns_to_drop, inplace=True)
 
-        # Define features (X) and labels (y)
+        # features and labels
         self.X_train = self.dataset1.drop('attack_category', axis=1)
         self.y_train = self.dataset1['attack_category'].astype(str)  # ensure consistent type
         self.X_test = self.dataset2.drop('attack_category', axis=1)

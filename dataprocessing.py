@@ -34,11 +34,13 @@ attack_types = {
     'neptune': 'DoS', 'smurf': 'DoS', 'back': 'DoS', 'teardrop': 'DoS',
     'pod': 'DoS', 'land': 'DoS', 'apache2': 'DoS', 'udpstorm': 'DoS',
     'processtable': 'DoS', 'worm': 'DoS',
+    'mailbomb' : 'DoS',
     'satan': 'Probe', 'ipsweep': 'Probe', 'nmap': 'Probe',
     'portsweep': 'Probe', 'mscan': 'Probe', 'saint': 'Probe',
     'guess_passwd': 'R2L', 'ftp_write': 'R2L', 'imap': 'R2L',
     'phf': 'R2L', 'multihop': 'R2L', 'warezmaster': 'R2L',
     'warezclient': 'R2L', 'spy': 'R2L', 'xlock': 'R2L',
+
     'xsnoop': 'R2L', 'snmpguess': 'R2L', 'snmpgetattack': 'R2L',
     'httptunnel': 'R2L', 'sendmail': 'R2L', 'named': 'R2L',
     'buffer_overflow': 'U2R', 'loadmodule': 'U2R', 'perl': 'U2R',
@@ -50,6 +52,9 @@ dataset_test['attack_category'] = dataset_test['label'].map(attack_types)
 
 
 dataset['attack_category'] = dataset['label'].map(attack_types)
+
+unmapped = dataset_test[dataset_test['attack_category'].isnull()]['label'].unique()
+print("Unmapped labels:", unmapped)
 
 
 dataset.to_csv("processed_dataset.csv", index=False)
