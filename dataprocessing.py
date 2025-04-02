@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
-# Define column names
+# column names
 columns = [
     'duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
     'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins',
@@ -19,7 +19,6 @@ columns = [
 
 
 dataset = pd.read_csv("NLS_KDD_Dataset/KDDTrain+.txt", names=columns)
-
 dataset_test = pd.read_csv("NLS_KDD_Dataset/KDDTest+.txt", names=columns)
 
 # Encode categorical data
@@ -29,6 +28,7 @@ for col in categoricals:
     dataset[col + '_encoded'] = encoder.fit_transform(dataset[col])
     dataset_test[col + '_encoded'] = encoder.fit_transform(dataset_test[col])
 
+# attack type mappings
 attack_types = {
     'normal': 'normal',
     'neptune': 'DoS', 'smurf': 'DoS', 'back': 'DoS', 'teardrop': 'DoS',
@@ -44,6 +44,11 @@ attack_types = {
     'buffer_overflow': 'U2R', 'loadmodule': 'U2R', 'perl': 'U2R',
     'rootkit': 'U2R', 'sqlattack': 'U2R', 'xterm': 'U2R', 'ps': 'U2R'
 }
+
+
+dataset_test['attack_category'] = dataset_test['label'].map(attack_types)
+
+
 dataset['attack_category'] = dataset['label'].map(attack_types)
 
 
