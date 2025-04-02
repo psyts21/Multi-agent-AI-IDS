@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV
-
+from imblearn.over_sampling import SMOTE
 
 class SingleAgentIDS:
     def __init__(self, training_data, test_data):
@@ -11,7 +11,7 @@ class SingleAgentIDS:
         self.test_data = test_data
 
         # model and scaler
-        self.random_forest = None  # Will be set after tuning
+        self.random_forest = None 
         self.scaler = MinMaxScaler()
 
     def loading_datasets(self):
@@ -28,9 +28,15 @@ class SingleAgentIDS:
         self.X_test = self.dataset2.drop('attack_category', axis=1)
         self.y_test = self.dataset2['attack_category'].astype(str)
 
+    
     def scaling_values(self):
         self.X_train = self.scaler.fit_transform(self.X_train)
         self.X_test = self.scaler.transform(self.X_test)
+
+    def balancing_values(self):
+        smote = SMOTE(random_state=42)
+        self.X_train, self.y_train = smote.fit_resample(self.X_train, self.y_train)
+
 
     def tune_hyperparameters(self):
         param_dist = {
@@ -43,20 +49,19 @@ class SingleAgentIDS:
         randomized_search = RandomizedSearchCV(
             estimator=RandomForestClassifier(random_state=42, class_weight='balanced'),
             param_distributions=param_dist,
-            n_iter=10,  # Reduced for faster run
-            cv=3,       # Reduced folds
+            n_iter=10, 
+            cv=3,       
             scoring='f1_weighted',
-            n_jobs=1,   # Avoid overload
+            n_jobs=1,  
             verbose=1,
             random_state=42
         )
 
-        # Optional: Use a smaller training set to speed things up
         X_sample = self.X_train[:100]
         y_sample = self.y_train[:100]
 
         randomized_search.fit(X_sample, y_sample)
-        print("\n✅ Best parameters:", randomized_search.best_params_)
+        print("\n Best parameters:", randomized_search.best_params_)
         self.random_forest = randomized_search.best_estimator_
 
     def training_model(self):
@@ -65,12 +70,12 @@ class SingleAgentIDS:
         self.random_forest.fit(self.X_train, self.y_train)
 
     def evaluate_model(self):
-        print("\n📊 TEST set:")
+        print("\n TEST set:")
         y_pred_test = self.random_forest.predict(self.X_test)
         print(confusion_matrix(self.y_test, y_pred_test))
         print(classification_report(self.y_test, y_pred_test))
 
-        print("\n🎓 TRAINING set:")
+        print("\n TRAINING set:")
         y_pred_train = self.random_forest.predict(self.X_train)
         print(confusion_matrix(self.y_train, y_pred_train))
         print(classification_report(self.y_train, y_pred_train))
@@ -81,6 +86,7 @@ if __name__ == "__main__":
     ids = SingleAgentIDS("processed_dataset.csv", "processed_dataset_test.csv")
     ids.loading_datasets()
     ids.scaling_values()
+    ids.balancing_values()
     ids.tune_hyperparameters()
     ids.training_model()
     ids.evaluate_model()
