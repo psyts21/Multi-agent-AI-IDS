@@ -20,12 +20,14 @@ columns = [
 
 dataset = pd.read_csv("NLS_KDD_Dataset/KDDTrain+.txt", names=columns)
 
+dataset_test = pd.read_csv("NLS_KDD_Dataset/KDDTest+.txt", names=columns)
+
 # Encode categorical data
 categoricals = ['protocol_type', 'service', 'flag']
 for col in categoricals:
     encoder = LabelEncoder()
     dataset[col + '_encoded'] = encoder.fit_transform(dataset[col])
-
+    dataset_test[col + '_encoded'] = encoder.fit_transform(dataset_test[col])
 
 attack_types = {
     'normal': 'normal',
@@ -46,4 +48,4 @@ dataset['attack_category'] = dataset['label'].map(attack_types)
 
 
 dataset.to_csv("processed_dataset.csv", index=False)
-
+dataset_test.to_csv("processed_dataset_test.csv", index=False)
