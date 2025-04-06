@@ -5,6 +5,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
 from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
+import random
 
 class SingleAgentIDS:
     def __init__(self, training_data, test_data):
@@ -68,7 +69,7 @@ class SingleAgentIDS:
         # )
 
         # randomized_search.fit(X_sample, y_sample)
-        # print("\n✅ Best RF parameters:", randomized_search.best_params_)
+        # print("\ rf paramc:", randomized_search.best_params_)
         # self.random_forest = randomized_search.best_estimator_
 
     def training_model(self):
@@ -99,7 +100,7 @@ class SingleAgentIDS:
     #     )
 
     #     randomized_search.fit(X_sample, y_sample)
-    #     print("\n✅ Best XGBoost parameters:", randomized_search.best_params_)
+    #     print("\n xgboost param:", randomized_search.best_params_)
     #     self.xgb_model = randomized_search.best_estimator_
 
     def training_xgboost(self):
@@ -135,25 +136,26 @@ class SingleAgentIDS:
         return responses.get(prediction_label, "No action configured.")
 
     def evaluate_final_model(self):
-        print("\n🧠 FINAL MODEL (Voting Classifier) - TEST set:")
+        print("\n voting model  test set:")
         y_pred_test = self.voting_clf.predict(self.X_test)
         print(confusion_matrix(self.y_test, y_pred_test))
         print(classification_report(self.y_test, y_pred_test, target_names=self.label_encoder.classes_))
 
-        print("\n📊 FINAL MODEL (Voting Classifier) - TRAINING set:")
+        print("\n voting model training set:")
         y_pred_train = self.voting_clf.predict(self.X_train)
         print(confusion_matrix(self.y_train, y_pred_train))
         print(classification_report(self.y_train, y_pred_train, target_names=self.label_encoder.classes_))
 
-        print("\n⚠️ Reactions for first 20 predictions:")
-        for i in range(20):
+
+        random_indices = random.sample(range(len(self.y_test)), 20)
+
+        for i in random_indices:
             actual = self.label_encoder.inverse_transform([self.y_test[i]])[0]
             predicted = self.label_encoder.inverse_transform([y_pred_test[i]])[0]
             reaction = self.respond_to_attack(predicted)
             print(f"[{i}] True: {actual.ljust(7)} | Predicted: {predicted.ljust(7)} | Reaction: {reaction}")
 
-
-# 🔁 Pipeline
+#  Pipeline
 if __name__ == "__main__":
     ids = SingleAgentIDS("processed_dataset.csv", "processed_dataset_test.csv")
     ids.loading_datasets()

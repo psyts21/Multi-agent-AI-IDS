@@ -5,6 +5,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
 from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
+import random
 
 class SingleAgentIDS:
     def __init__(self, training_data, test_data):
@@ -136,8 +137,9 @@ class SingleAgentIDS:
         print(confusion_matrix(self.y_train, y_pred_train))
         print(classification_report(self.y_train, y_pred_train, target_names=self.label_encoder.classes_))
 
-        print("\n⚠️ Reactions for first 20 predictions:")
-        for i in range(20):
+        random_indices = random.sample(range(len(self.y_test)), 20)
+
+        for i in random_indices:
             actual = self.label_encoder.inverse_transform([self.y_test[i]])[0]
             predicted = self.label_encoder.inverse_transform([y_pred_test[i]])[0]
             reaction = self.respond_to_attack(predicted)
@@ -149,7 +151,7 @@ class SingleAgentIDS:
         print(confusion_matrix(self.y_test, y_pred_test))
         print(classification_report(self.y_test, y_pred_test, target_names=self.label_encoder.classes_))
 
-        print("\n📊 XGBoost training set:")
+        print("\n  XGBoost training set:")
         y_pred_train = self.xgb_model.predict(self.X_train)
         print(confusion_matrix(self.y_train, y_pred_train))
         print(classification_report(self.y_train, y_pred_train, target_names=self.label_encoder.classes_))
