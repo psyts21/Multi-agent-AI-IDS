@@ -49,9 +49,10 @@ attack_types = {
 
 
 dataset_test['attack_category'] = dataset_test['label'].map(attack_types)
-
+# print(dataset_test["label"])
 
 dataset['attack_category'] = dataset['label'].map(attack_types)
+print(dataset_test['attack_category'])
 
 unmapped = dataset_test[dataset_test['attack_category'].isnull()]['label'].unique()
 print("Unmapped labels:", unmapped)
