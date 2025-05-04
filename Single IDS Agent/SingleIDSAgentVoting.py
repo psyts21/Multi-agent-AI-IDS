@@ -21,6 +21,8 @@ class SingleAgentIDS:
     def loading_datasets(self):
         self.dataset1 = pd.read_csv(self.training_data)
         self.dataset2 = pd.read_csv(self.test_data)
+    
+
 
         columns_to_drop = ['protocol_type', 'service', 'flag', 'label', 'difficulty']
         self.dataset1.drop(columns=columns_to_drop, inplace=True)
@@ -74,7 +76,14 @@ class SingleAgentIDS:
 
     def training_model(self):
         if not self.random_forest:
-            self.random_forest = RandomForestClassifier(n_estimators=100, random_state=42)
+            self.random_forest = RandomForestClassifier(
+                n_estimators=400,
+                max_depth=30,
+                max_features=0.4,
+                min_samples_leaf=10,
+                class_weight='balanced', # to help for the instance balance 
+                random_state= 42
+            )
         self.random_forest.fit(self.X_train, self.y_train)
 
     # def tune_xgboost_hyperparameters(self):
@@ -106,9 +115,15 @@ class SingleAgentIDS:
     def training_xgboost(self):
         if not self.xgb_model:
             self.xgb_model = XGBClassifier(
-                n_estimators=100,
-                max_depth=6,
-                learning_rate=0.1,
+                n_estimators=300,
+                max_depth=5,
+                learning_rate=0.5,
+                subsample=0.5,
+                colsample_bytree=0.4,
+                gamma=3,
+                min_child_weight=1,
+                reg_alpha=0,
+                reg_lambda=10,
                 use_label_encoder=False,
                 eval_metric='mlogloss',
                 verbosity=0
@@ -141,10 +156,10 @@ class SingleAgentIDS:
         print(confusion_matrix(self.y_test, y_pred_test))
         print(classification_report(self.y_test, y_pred_test, target_names=self.label_encoder.classes_))
 
-        print("\n voting model training set:")
-        y_pred_train = self.voting_clf.predict(self.X_train)
-        print(confusion_matrix(self.y_train, y_pred_train))
-        print(classification_report(self.y_train, y_pred_train, target_names=self.label_encoder.classes_))
+       # print("\n voting model training set:")
+       # y_pred_train = self.voting_clf.predict(self.X_train)
+       # print(confusion_matrix(self.y_train, y_pred_train))
+       # print(classification_report(self.y_train, y_pred_train, target_names=self.label_encoder.classes_))
 
 
         random_indices = random.sample(range(len(self.y_test)), 20)

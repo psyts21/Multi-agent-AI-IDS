@@ -48,73 +48,92 @@ class SingleAgentIDS:
         for train_idx, _ in splitter.split(self.X_train, self.y_train):
             return self.X_train[train_idx], self.y_train[train_idx]
 
-    # def tune_hyperparameters(self):
-    #     param_dist = {
-    #         'n_estimators': [100, 200, 300],
-    #         'max_features': ['sqrt', 'log2', 0.3],
-    #         'max_depth': [5, 10, 20, 30],
-    #         'min_samples_leaf': [1, 5, 10]
-    #     }
+    def tune_rf_hyperparameters(self):
+        param_dist = {   # parameter space to search in
+        'n_estimators': [50, 100, 150, 200], # the number of trees
+        'max_features': ['sqrt', 'log2' , 0.2, 0,5,0.3], # how many features to consider for each tree 
+        'max_depth': [5, 10,15], # how deep the trees can grow 
+        'min_samples_leaf': [ 5,10,15] 
+        
+    }
 
-    #     X_sample, y_sample = self.get_stratified_sample(size=1000)
+        X_sample, y_sample = self.get_stratified_sample(size=8000) # subset of the sample
 
-    #     randomized_search = RandomizedSearchCV(
-    #         estimator=RandomForestClassifier(random_state=42, class_weight='balanced'),
-    #         param_distributions=param_dist,
-    #         n_iter=10,
-    #         cv=3,
-    #         scoring='f1_weighted',
-    #         n_jobs=1,
-    #         verbose=1,
-    #         random_state=42
-    #     )
+        randomized_search = RandomizedSearchCV(
+            estimator=RandomForestClassifier(random_state=42, class_weight='balanced'),
+            param_distributions=param_dist,
+            n_iter=5,  
+            cv=3,     
+            scoring='f1_weighted', # helps to optimise for the overall performance without totally ignoring rare classes.
+            n_jobs=1,
+            verbose=0,
+            random_state=80
+        )
 
-    #     randomized_search.fit(X_sample, y_sample)
-    #     print("\n rf param:", randomized_search.best_params_)
-    #     self.random_forest = randomized_search.best_estimator_
+        randomized_search.fit(X_sample, y_sample)
+        print("\n[Random Forest] best parameters:", randomized_search.best_params_)
+        self.random_forest = randomized_search.best_estimator_
 
     def training_model(self):
         if not self.random_forest:
-            self.random_forest = RandomForestClassifier(n_estimators=100, random_state=42)
+            self.random_forest = RandomForestClassifier(
+                n_estimators=100,
+                max_depth=15,
+                max_features='sqrt',
+                min_samples_leaf=10,
+                class_weight='balanced', # to help for the instance balance 
+                random_state= 42
+            )
         self.random_forest.fit(self.X_train, self.y_train)
 
-   # def tune_xgboost_hyperparameters(self):
-        # param_dist = {
-        #     'n_estimators': [100, 200, 300],
-        #     'max_depth': [3, 6, 10],
-        #     'learning_rate': [0.01, 0.1, 0.2],
-        #     'subsample': [0.7, 0.8, 1.0],
-        #     'colsample_bytree': [0.7, 0.8, 1.0]
-        # }
 
-        # X_sample, y_sample = self.get_stratified_sample(size=1000)
+    def tune_xgboost_hyperparameters(self):
+        param_dist = {
+             'n_estimators': [100, 200, 300],
+            'max_depth': [3, 6, 8],
+            'learning_rate': [0.01, 0.1, 0.2],
+             'subsample': [0.7, 0.8, 1.0],
+            'colsample_bytree': [0.7, 0.8, 1.0],
+            'gamma': [0, 1, 5],
+            'min_child_weight': [1, 3, 5],
+            'reg_alpha': [0, 0.1, 1],
+            'reg_lambda': [1, 5, 10]
+        }
 
-        # randomized_search = RandomizedSearchCV(
-        #     estimator=XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', verbosity=0),
-        #     param_distributions=param_dist,
-        #     n_iter=10,
-        #     cv=3,
-        #     scoring='f1_weighted',
-        #     n_jobs=1,
-        #     verbose=1,
-        #     random_state=42
-        # )
+        X_sample, y_sample = self.get_stratified_sample(size=6000)
 
-        # randomized_search.fit(X_sample, y_sample)
-        # print("\n Best XGBoost parameters:", randomized_search.best_params_)
-        # self.xgb_model = randomized_search.best_estimator_
+        randomized_search = RandomizedSearchCV(
+             estimator=XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', verbosity=0),
+             param_distributions=param_dist,
+             n_iter=5,
+             cv=3,
+             scoring='f1_weighted',
+             n_jobs=-1,
+             verbose=1,
+             random_state=42
+        )
+
+        randomized_search.fit(X_sample, y_sample)
+        print("\n Best XGBoost parameters:", randomized_search.best_params_)
+        self.xgb_model = randomized_search.best_estimator_
 
     def training_xgboost(self):
         if not self.xgb_model:
             self.xgb_model = XGBClassifier(
-                n_estimators=100,
-                max_depth=6,
-                learning_rate=0.1,
+                n_estimators=300,
+                max_depth=5,
+                learning_rate=0.5,
+                subsample=0.5,
+                colsample_bytree=0.4,
+                gamma=3,
+                min_child_weight=3,
+                reg_alpha=0,
+                reg_lambda=10,
                 use_label_encoder=False,
                 eval_metric='mlogloss',
                 verbosity=0
             )
-        self.xgb_model.fit(self.X_train, self.y_train)
+            self.xgb_model.fit(self.X_train, self.y_train)
 
     def respond_to_attack(self, prediction_label):
         responses = {
@@ -163,11 +182,11 @@ if __name__ == "__main__":
     ids.scaling_values()
     ids.balancing_values()
 
-    # ids.tune_hyperparameters()
-    ids.training_model()
+    #ids.tune_rf_hyperparameters()
+    #ids.training_model()
 
    # ids.tune_xgboost_hyperparameters()
     ids.training_xgboost()
 
-    ids.evaluate_model()
+    #ids.evaluate_model()
     ids.evaluate_xgboost()
