@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from imblearn.over_sampling import SMOTE
+from xgboost import XGBClassifier
 
 class DetectionAgents:
     def __init__(self, training_data, test_data, target_attack="DoS", model=None):
@@ -11,13 +12,18 @@ class DetectionAgents:
         self.test_data = test_data
         self.target_attack = target_attack  # constructor , will pass the specific attack and the csv 
 
-        # using rf as default in case no model is used 
-        self.model = model or RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            class_weight='balanced',
-            random_state=42
-        )
+            # using rf as default in case no model is used 
+        self.model = model or XGBClassifier(
+        n_estimators=200,
+        max_depth=10,
+        learning_rate=0.1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        gamma=2,
+        eval_metric="logloss",
+        verbosity=0
+    )
+
         self.scaler = MinMaxScaler()
 
     def preprocess_data(self, data):
@@ -50,7 +56,7 @@ class DetectionAgents:
 
     def evaluate(self):
         y_pred = self.model.predict(self.X_test)
-        print(f"\n=== Evaluation Report for {self.target_attack} Agent ===")
+        print(f"\n=== Evaluation  for {self.target_attack} Agent ===")
         print(confusion_matrix(self.y_test, y_pred))
         print(classification_report(self.y_test, y_pred, target_names=[f"Not-{self.target_attack}", self.target_attack]))
 
