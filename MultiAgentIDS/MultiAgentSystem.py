@@ -12,7 +12,7 @@ class MultiAgentSystem:
         self.agents = {}
 
     def load_data_once(self):
-        print("Loading and preprocessing shared data...")
+        print("Loading and preprocessing shared data")
         self.train_df = pd.read_csv(self.train_csv)
         self.test_df = pd.read_csv(self.test_csv)
 
@@ -21,7 +21,7 @@ class MultiAgentSystem:
         self.test_df.drop(columns=cols_to_drop, errors='ignore', inplace=True)
 
     def setup_agents(self):
-        print("Setting up agents...")
+        print("running agents")
         self.agents = {
             "DoS": DetectionAgents(
                 train_df=self.train_df,
@@ -59,8 +59,17 @@ class MultiAgentSystem:
         }
 
     def run_system(self):
+        results = []
+
         for name, agent in self.agents.items():
-            print(f"\n Running {name} Agent ")
+            print(f" {name} Agent ")
+
             agent.load_and_prepare()
-            agent.train()
-            agent.evaluate()
+
+            if not agent.load_model():
+                agent.train()
+                agent.save_model()
+
+            result = agent.evaluate()
+            results.append(result)
+

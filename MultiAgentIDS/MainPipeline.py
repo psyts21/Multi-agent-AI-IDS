@@ -1,7 +1,7 @@
 from MultiAgentSystem import MultiAgentSystem
 
 if __name__ == "__main__":
-    print("=== Multi-Agent IDS System ===")
+    print("Multi-Agent IDS System")
 
     system = MultiAgentSystem(
         train_csv="processed_dataset.csv",
