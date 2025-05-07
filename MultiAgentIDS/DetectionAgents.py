@@ -41,44 +41,67 @@ class DetectionAgents:
     
 
     def load_and_prepare(self):
+     
         self.X_train, self.y_train = self.preprocess_data(self.train_df)
-        self.X_test, self.y_test = self.preprocess_data(self.test_df)
+        self.X_test,  self.y_test  = self.preprocess_data(self.test_df)
 
-        self.X_train = self.scaler.fit_transform(self.X_train)
-        self.X_test = self.scaler.transform(self.X_test)
+        self.feature_names = self.X_train.columns.tolist()
 
+        # 2) Scale
+        self.scaler.fit(self.X_train)                     # names kept
+        self.X_train = pd.DataFrame(
+            self.scaler.transform(self.X_train),          # names still present
+            columns=self.feature_names
+        )
+        self.X_test  = pd.DataFrame(self.scaler.transform(self.X_test), columns=self.feature_names)
+    
         print("before:", Counter(self.y_train))
 
-        smote = SMOTETomek(smote=SMOTE(k_neighbors=3), random_state=42)
-        X_resampled, y_resampled = smote.fit_resample(self.X_train, self.y_train)
+     
+        if self.y_train.mean() < 0.50:
+            smote = SMOTETomek(smote=SMOTE(k_neighbors=3), random_state=42)
+            X_resampled, y_resampled = smote.fit_resample(self.X_train, self.y_train)
+            print("SMOTE‑Tomek applied")
+            X_resampled = pd.DataFrame(X_resampled, columns=self.feature_names)
+        else:
+            X_resampled, y_resampled = self.X_train, self.y_train
+            print("Skipped SMOTE (positive class already ≥ 50 %)")
 
         print("after:", Counter(y_resampled))
 
         self.X_train, self.y_train = X_resampled, y_resampled
 
 
+
+
     def train(self):
-        self.model.fit(self.X_train, self.y_train)
+       
+        search = None                        
 
         if self.tune_hyperparameters and self.param_grid:
-                print("Running RandomizedSearchCV for hyperparameter tuning...")
-                search = RandomizedSearchCV(
-                    estimator=self.model,
-                    param_distributions=self.param_grid,
-                    n_iter=10,
-                    scoring='accuracy',
-                    cv=3,
-                    verbose=2,
-                    random_state=42,
-                    n_jobs=-1
-                )
-                search.fit(self.X_train, self.y_train)
-                self.model = search.best_estimator_
+            print(f"ruunning RandomizedSearchCV for {self.target_attack} …")
+            search = RandomizedSearchCV(
+                estimator           = self.model,
+                param_distributions = self.param_grid,
+                n_iter              = 10,
+                scoring             = "accuracy",
+                cv                  = 3,
+                verbose             = 2,
+                random_state        = 42,
+                n_jobs              = -1
+            )
+            search.fit(self.X_train, self.y_train)
+            self.model = search.best_estimator_
+
+            print(f"\nBest hyper‑parameters for {self.target_attack}:")
+            for p, v in search.best_params_.items():
+                print(f"  - {p}: {v}")
         else:
-                self.model.fit(self.X_train, self.y_train)
-        print(f"\nest hyperparameters for {self.target_attack}:")
-        for param, value in search.best_params_.items():
-            print(f"  - {param}: {value}")
+            assert isinstance(self.X_train, pd.DataFrame)
+            self.model.fit(self.X_train, self.y_train)
+            print(f"Trained {self.target_attack} with default params (no tuning)")
+
+
 
     def evaluate(self):
         y_pred = self.model.predict(self.X_test)

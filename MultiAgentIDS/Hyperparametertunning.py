@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
     # configs
     agent_configs = [
+     
         {
             "name": "DoS",
             "model": XGBClassifier(eval_metric="logloss", verbosity=0),
@@ -96,3 +97,4 @@ if __name__ == "__main__":
         json.dump(best_params, f, indent=4)
 
     print("\n  All best hyperparameters saved to best_hyperparams.json ")
+
