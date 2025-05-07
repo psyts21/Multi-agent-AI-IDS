@@ -5,26 +5,30 @@ from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTETomek
 from xgboost import XGBClassifier
 from collections import Counter
+from sklearn.model_selection import RandomizedSearchCV
 import os
 import joblib
 
+ 
 class DetectionAgents:
-    def __init__(self, train_df, test_df, target_attack="DoS", model=None):
-        self.train_df = train_df.copy()
-        self.test_df = test_df.copy()
-        self.target_attack = target_attack
+    def __init__(self, train_df, test_df, target_attack="DoS", model=None, param_grid=None, tune_hyperparameters=False):
+            self.train_df = train_df.copy()
+            self.test_df = test_df.copy()
+            self.target_attack = target_attack
+            self.model = model or XGBClassifier(
+                n_estimators=200,
+                max_depth=10,
+                learning_rate=0.1,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                gamma=2,
+                eval_metric="logloss",
+                verbosity=0
+            )
+            self.param_grid = param_grid
+            self.tune_hyperparameters = tune_hyperparameters
+            self.scaler = MinMaxScaler()
 
-        self.model = model or XGBClassifier(
-            n_estimators=200,
-            max_depth=10,
-            learning_rate=0.1,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            gamma=2,
-            eval_metric="logloss",
-            verbosity=0
-        )
-        self.scaler = MinMaxScaler()
 
     def preprocess_data(self, data):
         columns_to_drop = ['protocol_type', 'service', 'flag', 'label', 'difficulty']
@@ -56,6 +60,26 @@ class DetectionAgents:
     def train(self):
         self.model.fit(self.X_train, self.y_train)
 
+        if self.tune_hyperparameters and self.param_grid:
+                print("Running RandomizedSearchCV for hyperparameter tuning...")
+                search = RandomizedSearchCV(
+                    estimator=self.model,
+                    param_distributions=self.param_grid,
+                    n_iter=10,
+                    scoring='accuracy',
+                    cv=3,
+                    verbose=2,
+                    random_state=42,
+                    n_jobs=-1
+                )
+                search.fit(self.X_train, self.y_train)
+                self.model = search.best_estimator_
+        else:
+                self.model.fit(self.X_train, self.y_train)
+        print(f"\nest hyperparameters for {self.target_attack}:")
+        for param, value in search.best_params_.items():
+            print(f"  - {param}: {value}")
+
     def evaluate(self):
         y_pred = self.model.predict(self.X_test)
         print(f"\ Evaluation of the  {self.target_attack} agent ")
@@ -77,3 +101,5 @@ class DetectionAgents:
             return True
         print(f" No model found for {self.target_attack}")
         return False
+    
+
