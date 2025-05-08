@@ -16,7 +16,7 @@ if __name__ == "__main__":
     system.run_system()
 
     
-    X_test = system.test_df.drop(columns=["attack_category"])  # Keep as DataFrame
+    X_test = system.test_df.drop(columns=["attack_category"])  
     y_true = system.test_df["attack_category"].values
 
 
